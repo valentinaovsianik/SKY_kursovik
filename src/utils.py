@@ -114,15 +114,69 @@ def get_exchange_rates():
         logging.error(f"Ошибка при обработке данных API: {e}")
         return None
 
-if __name__ == "__main__":
-    rates = get_exchange_rates()
-    if rates:
-        print("Полученные курсы валют:")
-        for rate in rates:
-            print(f"{rate['currency']}: {rate['rate']}")
-    else:
-        print("Не удалось получить курсы валют.")
+# if __name__ == "__main__":
+#     rates = get_exchange_rates()
+#     if rates:
+#         print("Полученные курсы валют:")
+#         for rate in rates:
+#             print(f"{rate['currency']}: {rate['rate']}")
+#     else:
+#         print("Не удалось получить курсы валют.")
 
+def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
+    """Получает цены на акции на определенную дату"""
+    # Загрузка настроек пользователя
+    user_settings = get_load_user_setting(settings_file)
+    if not user_settings:
+        return {}
+
+    # Получение списка символов акций из настроек
+    user_stocks = user_settings.get("user_stocks", [])
+    prices = {}
+
+   # URL для запроса
+    url = "https://www.alphavantage.co/query"
+
+
+    for symbol in user_stocks:
+        params = {
+            "function": "TIME_SERIES_DAILY",
+            "symbol": symbol,
+             "apikey": api_key
+        }
+
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            # Проверка наличия данных
+            if "Time Series (Daily)" in data:
+                time_series = data["Time Series (Daily)"]
+                if date in time_series:
+                    prices[symbol] = time_series[date]["4. close"]  # Цена закрытия
+                else:
+                    logging.warning(f"Нет данных для {symbol} на дату {date}")
+            else:
+                logging.error(f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}")
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Ошибка запроса для {symbol}: {e}")
+
+    return prices
+
+if __name__ == "__main__":
+    api_key = "ER9IH8G9L0EQKMFI"
+    settings_file = "../user_settings.json"
+    date = "2024-07-22"
+
+    stock_prices = get_stock_prices(api_key, settings_file, date)
+    if stock_prices:
+        print("Цены на акции на дату", date)
+        for symbol, price in stock_prices.items():
+            print(f"{symbol}: {price}")
+    else:
+        print("Не удалось получить данные о ценах на акции.")
 
 
 
