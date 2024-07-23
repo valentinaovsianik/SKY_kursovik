@@ -32,6 +32,12 @@ def search_transactions(file_name: str, search_query: str) -> str:
             df["Категория"].str.lower().str.contains(search_query_lower, na=False)
         ]
 
+        # Приведение данных к строковому типу и замена NaN
+        filtered_df = filtered_df.fillna("")
+        for column in ["Кэшбэк", "MCC"]:
+            if column in filtered_df.columns:
+                filtered_df[column] = filtered_df[column].astype(str)
+
         logger.info(f"Поиск завершен. Найдено {len(filtered_df)} транзакций.")
 
         # Формирование результата
@@ -43,8 +49,8 @@ def search_transactions(file_name: str, search_query: str) -> str:
         logger.error(f"Ошибка при поиске транзакций: {str(e)}")
         return json.dumps({"error": str(e)}, ensure_ascii=False, indent=4)
 
-if __name__ == "__main__":
-    file_name = "../data/operations.xlsx"
-    search_query = "Супермаркеты"
-    result = search_transactions(file_name, search_query)
-    print(result)
+# if __name__ == "__main__":
+#     file_name = "../data/operations.xlsx"
+#     search_query = "Супермаркеты"
+#     result = search_transactions(file_name, search_query)
+#     print(result)
