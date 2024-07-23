@@ -40,3 +40,45 @@ def get_greeting(date_time_str: str) -> str:
 
     return greeting
 
+
+def analyze_transactions(file_name: str, date_time: str) -> str:
+    """Анализирует транзакции из excel-файла и возвращает JSON-ответ"""
+    try:
+        transactions_data = read_excel_file(file_name)
+
+        if not transactions_data:
+            logger.error(f"Нет данных для анализа в файле {file_name}.")
+            return json.dumps({"error": f"Нет данных для анализа в файле {file_name}"}, ensure_ascii=False)
+
+        logger.info(f"Начинаем анализ транзакций из файла {file_name}.")
+
+        df = pd.DataFrame(transactions_data)
+
+        # Последние 4 цифры номера карты
+        last_digits = df.iloc[0]["Номер карты"][-4:] if not df.empty and "Номер карты" in df else ""
+
+        # Общая сумма расходов
+        total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum()) if not df.empty and "Сумма операции" in df else 0
+
+        # Вычисление кэшбэка
+        cashback = total_spent / 100.0 # Вычисляем кэшбэк (1 рубль на каждые 100 рублей потраченных)
+
+        result = {
+            "last_digits": last_digits,
+            "total_spent": float(total_spent),
+            "cashback": round(cashback, 2),
+        }
+
+        logger.info("Анализ транзакций завершен успешно.")
+        return json.dumps(result, ensure_ascii=False, indent=4)
+
+    except Exception as e:
+        logger.error(f"Ошибка при анализе транзакций: {str(e)}")
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+# if __name__ == "__main__":
+#     file_name = "../data/operations.xlsx"
+#     date_time = "2024-07-23 14:30:00"
+#
+#     result = analyze_transactions(file_name, date_time)
+#     print(result)
