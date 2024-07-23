@@ -46,7 +46,7 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
     try:
         transactions_data = read_excel_file(file_name)
 
-        if not transactions_data:
+        if transactions_data.empty:
             logger.error(f"Нет данных для анализа в файле {file_name}.")
             return json.dumps({"error": f"Нет данных для анализа в файле {file_name}"}, ensure_ascii=False)
 
@@ -54,19 +54,24 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
 
         df = pd.DataFrame(transactions_data)
 
+        # Проверяем наличие необходимых колонок
+        if "Номер карты" not in df or "Сумма операции" not in df:
+            logger.error(f"Необходимые колонки отсутствуют в файле {file_name}.")
+            return json.dumps({"error": "Необходимые колонки отсутствуют в данных"}, ensure_ascii=False)
+
         # Последние 4 цифры номера карты
         last_digits = df.iloc[0]["Номер карты"][-4:] if not df.empty and "Номер карты" in df else ""
 
         # Общая сумма расходов
-        total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum()) if not df.empty and "Сумма операции" in df else 0
+        total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum())
 
         # Вычисление кэшбэка
-        cashback = total_spent / 100.0 # Вычисляем кэшбэк (1 рубль на каждые 100 рублей потраченных)
+        cashback = total_spent / 100.0  # 1 рубль на каждые 100 рублей потраченных
 
         result = {
             "last_digits": last_digits,
-            "total_spent": float(total_spent),
-            "cashback": round(cashback, 2),
+            "total_spent": round(float(total_spent), 2),
+            "cashback": round(cashback, 2)
         }
 
         logger.info("Анализ транзакций завершен успешно.")
@@ -104,8 +109,9 @@ def get_top_transactions(date_time: str) -> str:
         # Фильтрация транзакций по дате
         filtered_df = df[(df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)]
 
-        # Сортировка транзакций по сумме и выбор топ-5
-        top_transactions = filtered_df.nlargest(5, "Сумма операции")
+        # Сортировка транзакций по сумме в убывающем порядке и выбор топ-5
+        sorted_df = filtered_df.sort_values(by="Сумма операции", ascending=False)
+        top_transactions = sorted_df.head(5)
 
         # Форматирование даты и суммы
         top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
@@ -129,10 +135,10 @@ def get_top_transactions(date_time: str) -> str:
         logger.error(f"Ошибка при получении топ-5 транзакций: {str(e)}")
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
-if __name__ == "__main__":
-    date_time = "2021-12-08 14:30:00"
-    result = get_top_transactions(date_time)
-    print(result)
+# if __name__ == "__main__":
+#     date_time = "2021-12-08 14:30:00"
+#     result = get_top_transactions(date_time)
+#     print(result)
 
 
 
