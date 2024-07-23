@@ -57,22 +57,6 @@ def get_load_user_setting(file_path="../user_settings.json"):
 #         print("Не удалось загрузить настройки.")
 
 
-
-
-def get_load_user_setting(file_path="../user_settings.json"):
-    """Функция для загрузки пользовательских настроек из файла user_settings.json"""
-    try:
-        settings_file = os.path.abspath(file_path)
-
-        with open(settings_file, "r") as file:
-            settings = json.load(file)
-        logging.info(f"Настройки успешно загружены из {file_path}")
-        return settings
-    except Exception as e:
-        logging.error(f"Ошибка при загрузке настроек: {e}")
-        return None
-
-
 def get_exchange_rates():
     """Получает данных о курсах валют с использованием API"""
 
@@ -165,18 +149,18 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
 
     return prices
 
-if __name__ == "__main__":
-    api_key = "ER9IH8G9L0EQKMFI"
-    settings_file = "../user_settings.json"
-    date = "2024-07-22"
-
-    stock_prices = get_stock_prices(api_key, settings_file, date)
-    if stock_prices:
-        print("Цены на акции на дату", date)
-        for symbol, price in stock_prices.items():
-            print(f"{symbol}: {price}")
-    else:
-        print("Не удалось получить данные о ценах на акции.")
+# if __name__ == "__main__":
+#     api_key = "ER9IH8G9L0EQKMFI"
+#     settings_file = "../user_settings.json"
+#     date = "2024-07-22"
+#
+#     stock_prices = get_stock_prices(api_key, settings_file, date)
+#     if stock_prices:
+#         print("Цены на акции на дату", date)
+#         for symbol, price in stock_prices.items():
+#             print(f"{symbol}: {price}")
+#     else:
+#         print("Не удалось получить данные о ценах на акции.")
 
 
 
