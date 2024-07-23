@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler = logging.FileHandler(
-    os.path.join(log_dir, "views.log"), mode="w", encoding="utf-8"
-)
+file_handler = logging.FileHandler(os.path.join(log_dir, "views.log"), mode="w", encoding="utf-8")
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
@@ -28,9 +26,7 @@ logger.addHandler(file_handler)
 
 def get_greeting(date_time_str: str) -> str:
     """Функция приветствия в зависимости от времени суток"""
-    date_time_obj = datetime.strptime(
-        date_time_str, "%Y-%m-%d %H:%M:%S"
-    )  # Преобразование строки в объект datetime
+    date_time_obj = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")  # Преобразование строки в объект datetime
 
     hour = date_time_obj.hour  # Получение часа из объекта datetime
 
@@ -42,8 +38,6 @@ def get_greeting(date_time_str: str) -> str:
         return "Добрый вечер"
     else:
         return "Доброй ночи"
-
-    return greeting
 
 
 def analyze_transactions(file_name: str, date_time: str) -> str:
@@ -76,11 +70,7 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
             )
 
         # Последние 4 цифры номера карты
-        last_digits = (
-            df["Номер карты"].iloc[0][-4:]
-            if not df.empty and "Номер карты" in df.columns
-            else ""
-        )
+        last_digits = df["Номер карты"].iloc[0][-4:] if not df.empty and "Номер карты" in df.columns else ""
 
         # Общая сумма расходов
         total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum())
@@ -125,26 +115,18 @@ def get_top_transactions(date_time: str) -> str:
 
         # Преобразование столбца даты в datetime
         date_format = "%d.%m.%Y %H:%M:%S"
-        df["Дата операции"] = pd.to_datetime(
-            df["Дата операции"], format=date_format, errors="coerce"
-        )
+        df["Дата операции"] = pd.to_datetime(df["Дата операции"], format=date_format, errors="coerce")
 
         # Фильтрация транзакций по дате
-        filtered_df = df[
-            (df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)
-        ]
+        filtered_df = df[(df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)]
 
         # Сортировка транзакций по сумме в убывающем порядке и выбор топ-5
         sorted_df = filtered_df.sort_values(by="Сумма операции", ascending=False)
         top_transactions = sorted_df.head(5)
 
         # Форматирование даты и суммы
-        top_transactions["Дата операции"] = top_transactions[
-            "Дата операции"
-        ].dt.strftime("%d.%m.%Y")
-        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(
-            float
-        )
+        top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
+        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(float)
 
         # Формирование результата в требуемом формате
         result = []

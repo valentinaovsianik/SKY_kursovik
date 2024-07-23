@@ -13,9 +13,7 @@ logger.addHandler(stream_handler)
 
 def search_transactions(file_name: str, search_query: str) -> str:
     """Ищет транзакции по строке запроса в описании или категории и возвращает результат в формате JSON"""
-    logger.info(
-        f"Начинаем поиск транзакций в файле {file_name} по запросу '{search_query}'"
-    )
+    logger.info(f"Начинаем поиск транзакций в файле {file_name} по запросу '{search_query}'")
     try:
         df = read_excel_file(file_name)  # Чтение данных из Excel
         logger.debug(f"Данные успешно загружены из файла {file_name}")

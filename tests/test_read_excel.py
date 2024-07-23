@@ -1,10 +1,11 @@
-import pytest
-import pandas as pd
-import tempfile
 import os
-from datetime import datetime
+import tempfile
+
+import pandas as pd
+import pytest
 
 from src.read_excel import read_excel_file
+
 
 @pytest.fixture
 def temp_excel_file():
@@ -14,11 +15,13 @@ def temp_excel_file():
         file_name = tmp_file.name
 
     # Создаем DataFrame с тестовыми данными
-    df = pd.DataFrame({
-        "Номер карты": ["1234567812345678", "8765432187654321"],
-        "Сумма операции": [-1500.00, 500.00],
-        "Дата операции": ["01.01.2024 10:00:00", "02.01.2024 11:00:00"]
-    })
+    df = pd.DataFrame(
+        {
+            "Номер карты": ["1234567812345678", "8765432187654321"],
+            "Сумма операции": [-1500.00, 500.00],
+            "Дата операции": ["01.01.2024 10:00:00", "02.01.2024 11:00:00"],
+        }
+    )
 
     # Записываем DataFrame в Excel-файл
     df.to_excel(file_name, index=False)
@@ -28,6 +31,7 @@ def temp_excel_file():
     # Удаляем временный файл после выполнения теста
     if os.path.exists(file_name):
         os.remove(file_name)
+
 
 def test_read_excel_file_success(temp_excel_file):
     """Тест успешного чтения данных из временного Excel-файла"""

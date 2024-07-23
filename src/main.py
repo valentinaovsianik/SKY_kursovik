@@ -3,6 +3,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+
 from src.utils import get_exchange_rates, get_stock_prices
 from src.views import analyze_transactions, get_greeting, get_top_transactions
 
@@ -22,9 +23,7 @@ def main(datetime_str: str) -> str:
     try:
         # Получение данных
         greeting = get_greeting(datetime_str)
-        cards_analysis_json = analyze_transactions(
-            "../data/operations.xlsx", datetime_str
-        )
+        cards_analysis_json = analyze_transactions("../data/operations.xlsx", datetime_str)
         top_transactions_json = get_top_transactions(datetime_str)
         exchange_rates = get_exchange_rates()
         stock_prices = get_stock_prices(

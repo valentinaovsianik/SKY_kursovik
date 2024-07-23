@@ -1,7 +1,9 @@
-import pytest
-import pandas as pd
 import json
 import os
+
+import pandas as pd
+import pytest
+
 from src.services import search_transactions
 
 
@@ -21,7 +23,7 @@ def sample_excel_file(tmpdir):
         "Кэшбэк": ["", ""],
         "Категория": ["Супермаркеты", "Супермаркеты"],
         "MCC": ["5411", "5411"],
-        "Описание": ["Колхоз", "Колхоз"]
+        "Описание": ["Колхоз", "Колхоз"],
     }
     df = pd.DataFrame(data)
     df.to_excel(file_path, index=False)
@@ -44,7 +46,7 @@ def test_search_transactions(sample_excel_file):
             "Кэшбэк": "",
             "Категория": "Супермаркеты",
             "MCC": "5411",
-            "Описание": "Колхоз"
+            "Описание": "Колхоз",
         },
         {
             "Дата операции": "31.12.2021 16:42:04",
@@ -58,8 +60,8 @@ def test_search_transactions(sample_excel_file):
             "Кэшбэк": "",
             "Категория": "Супермаркеты",
             "MCC": "5411",
-            "Описание": "Колхоз"
-        }
+            "Описание": "Колхоз",
+        },
     ]
     expected_json = json.dumps(expected_result, ensure_ascii=False, indent=4)
 
@@ -92,7 +94,7 @@ def test_search_transactions_missing_columns(tmpdir):
         "Сумма платежа": ["-160,89"],
         "Валюта платежа": ["RUB"],
         "Кэшбэк": [""],
-        "Категория": ["Супермаркеты"]
+        "Категория": ["Супермаркеты"],
     }
     df = pd.DataFrame(data)
     df.to_excel(file_path, index=False)

@@ -1,7 +1,9 @@
-import os
 import json
+import os
+
 import pandas as pd
 import pytest
+
 from src.reports import spending_by_category
 
 
@@ -12,7 +14,7 @@ def sample_data():
         "Дата операции": ["31.12.2021", "31.12.2021", "31.12.2021"],
         "Категория": ["Супермаркеты", "Супермаркеты", "Рестораны"],
         "Сумма операции": [-160.89, -64.00, -200.00],
-        "Описание": ["Магазин", "Колхоз", "Ресторан"]
+        "Описание": ["Магазин", "Колхоз", "Ресторан"],
     }
     df = pd.DataFrame(data)
     return df

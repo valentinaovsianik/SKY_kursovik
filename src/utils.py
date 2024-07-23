@@ -65,9 +65,7 @@ def get_exchange_rates():
     if not user_settings:
         return None
 
-    user_currencies = user_settings.get(
-        "user_currencies", []
-    )  # Получаем список валют из настроек
+    user_currencies = user_settings.get("user_currencies", [])  # Получаем список валют из настроек
     exchange_rates = []
 
     api_key = os.getenv("API_KEY")  # Получаем API-ключ
@@ -77,19 +75,18 @@ def get_exchange_rates():
         return None
 
     base_currency = "RUB"
-    url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={','.join(user_currencies)}&base={base_currency}"
+    symbols = ",".join(user_currencies)
+    api_url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={symbols}&base={base_currency}"
     headers = {"apikey": api_key}
 
     try:
-        response = requests.get(url, headers=headers)  # Отправляем get-запрос к API
+        response = requests.get(api_url, headers=headers)  # Отправляем get-запрос к API
         response.raise_for_status()  # Проверка успешности запроса
         data = response.json()  # Парсим JSON-ответ
 
         for currency in user_currencies:
             if currency in data.get("rates", {}):
-                exchange_rates.append(
-                    {"currency": currency, "rate": data["rates"][currency]}
-                )
+                exchange_rates.append({"currency": currency, "rate": data["rates"][currency]})
         logging.info(f"Курсы валют успешно получены: {exchange_rates}")
         return exchange_rates
 
@@ -141,9 +138,7 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
                 else:
                     logging.warning(f"Нет данных для {symbol} на дату {date}")
             else:
-                logging.error(
-                    f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}"
-                )
+                logging.error(f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}")
 
         except requests.exceptions.RequestException as e:
             logging.error(f"Ошибка запроса для {symbol}: {e}")
