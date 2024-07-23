@@ -77,8 +77,62 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 # if __name__ == "__main__":
-#     file_name = "../data/operations.xlsx"
-#     date_time = "2024-07-23 14:30:00"
+#      file_name = "../data/operations.xlsx"
+#      date_time = "2024-07-23 14:30:00"
 #
-#     result = analyze_transactions(file_name, date_time)
-#     print(result)
+#      result = analyze_transactions(file_name, date_time)
+#      print(result)
+
+
+def get_top_transactions(date_time: str) -> str:
+    """Возвращает топ-5 транзакций по сумме платежа в формате JSON от начала месяца до указанной даты"""
+    try:
+        # Определение начала месяца
+        now = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+
+        # Загрузка данных из файла
+        file_name = "../data/operations.xlsx"
+        transactions_data = read_excel_file(file_name)
+        df = pd.DataFrame(transactions_data)
+
+        # Преобразование столбца даты в datetime
+        date_format = "%d.%m.%Y %H:%M:%S"
+        df["Дата операции"] = pd.to_datetime(df["Дата операции"], format=date_format, errors="coerce")
+
+        # Фильтрация транзакций по дате
+        filtered_df = df[(df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)]
+
+        # Сортировка транзакций по сумме и выбор топ-5
+        top_transactions = filtered_df.nlargest(5, "Сумма операции")
+
+        # Форматирование даты и суммы
+        top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
+        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(float)
+
+        # Формирование результата в требуемом формате
+        result = []
+        for _, row in top_transactions.iterrows():
+            result.append({
+                "date": row["Дата операции"],
+                "amount": float(row["Сумма операции"]),
+                "category": row.get("Категория"),
+                "description": row.get("Описание")
+            })
+
+        logger.info("Топ-5 транзакций успешно получены.")
+
+        return json.dumps({"top_transactions": result}, ensure_ascii=False, indent=4)
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении топ-5 транзакций: {str(e)}")
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+if __name__ == "__main__":
+    date_time = "2021-12-08 14:30:00"
+    result = get_top_transactions(date_time)
+    print(result)
+
+
+
