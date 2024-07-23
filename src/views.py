@@ -46,21 +46,26 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
     try:
         transactions_data = read_excel_file(file_name)
 
-        if transactions_data.empty:
+        # Преобразование данных в DataFrame, если это необходимо
+        if not isinstance(transactions_data, pd.DataFrame):
+            df = pd.DataFrame(transactions_data)
+        else:
+            df = transactions_data
+
+        # Проверка, что DataFrame не пустой
+        if df.empty:
             logger.error(f"Нет данных для анализа в файле {file_name}.")
             return json.dumps({"error": f"Нет данных для анализа в файле {file_name}"}, ensure_ascii=False)
 
         logger.info(f"Начинаем анализ транзакций из файла {file_name}.")
 
-        df = pd.DataFrame(transactions_data)
-
         # Проверяем наличие необходимых колонок
-        if "Номер карты" not in df or "Сумма операции" not in df:
+        if "Номер карты" not in df.columns or "Сумма операции" not in df.columns:
             logger.error(f"Необходимые колонки отсутствуют в файле {file_name}.")
             return json.dumps({"error": "Необходимые колонки отсутствуют в данных"}, ensure_ascii=False)
 
         # Последние 4 цифры номера карты
-        last_digits = df.iloc[0]["Номер карты"][-4:] if not df.empty and "Номер карты" in df else ""
+        last_digits = df["Номер карты"].iloc[0][-4:] if not df.empty and "Номер карты" in df.columns else ""
 
         # Общая сумма расходов
         total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum())
@@ -81,12 +86,13 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
         logger.error(f"Ошибка при анализе транзакций: {str(e)}")
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
+
 # if __name__ == "__main__":
-#      file_name = "../data/operations.xlsx"
-#      date_time = "2024-07-23 14:30:00"
+#     file_name = "../data/operations.xlsx"
+#     date_time = "2024-07-23 14:30:00"
 #
-#      result = analyze_transactions(file_name, date_time)
-#      print(result)
+#     result = analyze_transactions(file_name, date_time)
+#     print(result)
 
 
 def get_top_transactions(date_time: str) -> str:

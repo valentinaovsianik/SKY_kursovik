@@ -6,6 +6,7 @@ import logging
 import requests
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
@@ -28,6 +29,7 @@ file_handler.setFormatter(formatter)
 # Добавление обработчика к логгеру
 logger.addHandler(file_handler)
 
+
 def get_load_user_setting(file_path="../user_settings.json"):
     """Функция для загрузки пользовательских настроек из файла user_settings.json"""
     try:
@@ -37,7 +39,7 @@ def get_load_user_setting(file_path="../user_settings.json"):
             settings = json.load(file)
         logging.info(f"Настройки успешно загружены из {file_path}")
 
-        print(settings) # Вывод для отладки
+        print(settings)  # Вывод для отладки
 
         return settings
 
@@ -47,6 +49,7 @@ def get_load_user_setting(file_path="../user_settings.json"):
     except Exception as e:
         logging.error(f"Ошибка при загрузке настроек: {e}")
         return None
+
 
 # if __name__ == "__main__":
 #     settings = get_load_user_setting()
@@ -60,11 +63,13 @@ def get_load_user_setting(file_path="../user_settings.json"):
 def get_exchange_rates():
     """Получает данных о курсах валют с использованием API"""
 
-    user_settings = get_load_user_setting() # Вызываем функцию для загрузки настроек
+    user_settings = get_load_user_setting()  # Вызываем функцию для загрузки настроек
     if not user_settings:
         return None
 
-    user_currencies = user_settings.get("user_currencies", [])  # Получаем список валют из настроек
+    user_currencies = user_settings.get(
+        "user_currencies", []
+    )  # Получаем список валют из настроек
     exchange_rates = []
 
     api_key = os.getenv("API_KEY")  # Получаем API-ключ
@@ -78,25 +83,25 @@ def get_exchange_rates():
     headers = {"apikey": api_key}
 
     try:
-        response = requests.get(api_url, headers=headers) # Отправляем get-запрос к API
-        response.raise_for_status() # Проверка успешности запроса
-        data = response.json() # Парсим JSON-ответ
+        response = requests.get(api_url, headers=headers)  # Отправляем get-запрос к API
+        response.raise_for_status()  # Проверка успешности запроса
+        data = response.json()  # Парсим JSON-ответ
 
         for currency in user_currencies:
             if currency in data.get("rates", {}):
-                exchange_rates.append({
-                "currency": currency,
-                "rate": data["rates"][currency]
-            })
+                exchange_rates.append(
+                    {"currency": currency, "rate": data["rates"][currency]}
+                )
         logging.info(f"Курсы валют успешно получены: {exchange_rates}")
         return exchange_rates
 
-    except requests.exceptions.RequestException as e: # Обработка исключений
+    except requests.exceptions.RequestException as e:  # Обработка исключений
         logging.error(f"Ошибка при запросе к API: {e}")
         return None
     except KeyError as e:
         logging.error(f"Ошибка при обработке данных API: {e}")
         return None
+
 
 # if __name__ == "__main__":
 #     rates = get_exchange_rates()
@@ -106,6 +111,7 @@ def get_exchange_rates():
 #             print(f"{rate['currency']}: {rate['rate']}")
 #     else:
 #         print("Не удалось получить курсы валют.")
+
 
 def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
     """Получает цены на акции на определенную дату"""
@@ -118,16 +124,11 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
     user_stocks = user_settings.get("user_stocks", [])
     prices = {}
 
-   # URL для запроса
+    # URL для запроса
     url = "https://www.alphavantage.co/query"
 
-
     for symbol in user_stocks:
-        params = {
-            "function": "TIME_SERIES_DAILY",
-            "symbol": symbol,
-             "apikey": api_key
-        }
+        params = {"function": "TIME_SERIES_DAILY", "symbol": symbol, "apikey": api_key}
 
         try:
             response = requests.get(url, params=params)
@@ -142,12 +143,15 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
                 else:
                     logging.warning(f"Нет данных для {symbol} на дату {date}")
             else:
-                logging.error(f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}")
+                logging.error(
+                    f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}"
+                )
 
         except requests.exceptions.RequestException as e:
             logging.error(f"Ошибка запроса для {symbol}: {e}")
 
     return prices
+
 
 # if __name__ == "__main__":
 #     api_key = "ER9IH8G9L0EQKMFI"
@@ -161,6 +165,3 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
 #             print(f"{symbol}: {price}")
 #     else:
 #         print("Не удалось получить данные о ценах на акции.")
-
-
-
