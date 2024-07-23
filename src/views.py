@@ -1,10 +1,11 @@
-from  datetime import datetime
 import json
+import logging
 import os
+from datetime import datetime
 
 import pandas as pd
-import logging
 from dotenv import load_dotenv
+
 from src.read_excel import read_excel_file
 
 load_dotenv()
@@ -17,7 +18,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler = logging.FileHandler(os.path.join(log_dir, "views.log"), mode="w", encoding="utf-8")
+file_handler = logging.FileHandler(
+    os.path.join(log_dir, "views.log"), mode="w", encoding="utf-8"
+)
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
@@ -25,9 +28,11 @@ logger.addHandler(file_handler)
 
 def get_greeting(date_time_str: str) -> str:
     """Функция приветствия в зависимости от времени суток"""
-    date_time_obj = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S") # Преобразование строки в объект datetime
+    date_time_obj = datetime.strptime(
+        date_time_str, "%Y-%m-%d %H:%M:%S"
+    )  # Преобразование строки в объект datetime
 
-    hour = date_time_obj.hour # Получение часа из объекта datetime
+    hour = date_time_obj.hour  # Получение часа из объекта datetime
 
     if 6 <= hour < 12:
         return "Доброе утро"
@@ -55,17 +60,27 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
         # Проверка, что DataFrame не пустой
         if df.empty:
             logger.error(f"Нет данных для анализа в файле {file_name}.")
-            return json.dumps({"error": f"Нет данных для анализа в файле {file_name}"}, ensure_ascii=False)
+            return json.dumps(
+                {"error": f"Нет данных для анализа в файле {file_name}"},
+                ensure_ascii=False,
+            )
 
         logger.info(f"Начинаем анализ транзакций из файла {file_name}.")
 
         # Проверяем наличие необходимых колонок
         if "Номер карты" not in df.columns or "Сумма операции" not in df.columns:
             logger.error(f"Необходимые колонки отсутствуют в файле {file_name}.")
-            return json.dumps({"error": "Необходимые колонки отсутствуют в данных"}, ensure_ascii=False)
+            return json.dumps(
+                {"error": "Необходимые колонки отсутствуют в данных"},
+                ensure_ascii=False,
+            )
 
         # Последние 4 цифры номера карты
-        last_digits = df["Номер карты"].iloc[0][-4:] if not df.empty and "Номер карты" in df.columns else ""
+        last_digits = (
+            df["Номер карты"].iloc[0][-4:]
+            if not df.empty and "Номер карты" in df.columns
+            else ""
+        )
 
         # Общая сумма расходов
         total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum())
@@ -76,7 +91,7 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
         result = {
             "last_digits": last_digits,
             "total_spent": round(float(total_spent), 2),
-            "cashback": round(cashback, 2)
+            "cashback": round(cashback, 2),
         }
 
         logger.info("Анализ транзакций завершен успешно.")
@@ -110,28 +125,38 @@ def get_top_transactions(date_time: str) -> str:
 
         # Преобразование столбца даты в datetime
         date_format = "%d.%m.%Y %H:%M:%S"
-        df["Дата операции"] = pd.to_datetime(df["Дата операции"], format=date_format, errors="coerce")
+        df["Дата операции"] = pd.to_datetime(
+            df["Дата операции"], format=date_format, errors="coerce"
+        )
 
         # Фильтрация транзакций по дате
-        filtered_df = df[(df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)]
+        filtered_df = df[
+            (df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)
+        ]
 
         # Сортировка транзакций по сумме в убывающем порядке и выбор топ-5
         sorted_df = filtered_df.sort_values(by="Сумма операции", ascending=False)
         top_transactions = sorted_df.head(5)
 
         # Форматирование даты и суммы
-        top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
-        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(float)
+        top_transactions["Дата операции"] = top_transactions[
+            "Дата операции"
+        ].dt.strftime("%d.%m.%Y")
+        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(
+            float
+        )
 
         # Формирование результата в требуемом формате
         result = []
         for _, row in top_transactions.iterrows():
-            result.append({
-                "date": row["Дата операции"],
-                "amount": float(row["Сумма операции"]),
-                "category": row.get("Категория"),
-                "description": row.get("Описание")
-            })
+            result.append(
+                {
+                    "date": row["Дата операции"],
+                    "amount": float(row["Сумма операции"]),
+                    "category": row.get("Категория"),
+                    "description": row.get("Описание"),
+                }
+            )
 
         logger.info("Топ-5 транзакций успешно получены.")
 
@@ -141,10 +166,8 @@ def get_top_transactions(date_time: str) -> str:
         logger.error(f"Ошибка при получении топ-5 транзакций: {str(e)}")
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
+
 # if __name__ == "__main__":
 #     date_time = "2021-12-08 14:30:00"
 #     result = get_top_transactions(date_time)
 #     print(result)
-
-
-

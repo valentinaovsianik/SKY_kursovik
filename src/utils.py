@@ -1,10 +1,8 @@
 import json
-import os
-import time
-
 import logging
-import requests
+import os
 
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -79,11 +77,11 @@ def get_exchange_rates():
         return None
 
     base_currency = "RUB"
-    api_url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={','.join(user_currencies)}&base={base_currency}"
+    url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={','.join(user_currencies)}&base={base_currency}"
     headers = {"apikey": api_key}
 
     try:
-        response = requests.get(api_url, headers=headers)  # Отправляем get-запрос к API
+        response = requests.get(url, headers=headers)  # Отправляем get-запрос к API
         response.raise_for_status()  # Проверка успешности запроса
         data = response.json()  # Парсим JSON-ответ
 

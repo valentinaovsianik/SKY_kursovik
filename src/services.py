@@ -1,8 +1,7 @@
 import json
-import pandas as pd
 import logging
-from src.read_excel import read_excel_file
 
+from src.read_excel import read_excel_file
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,11 +10,14 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
+
 def search_transactions(file_name: str, search_query: str) -> str:
     """Ищет транзакции по строке запроса в описании или категории и возвращает результат в формате JSON"""
-    logger.info(f"Начинаем поиск транзакций в файле {file_name} по запросу '{search_query}'")
+    logger.info(
+        f"Начинаем поиск транзакций в файле {file_name} по запросу '{search_query}'"
+    )
     try:
-        df = read_excel_file(file_name) # Чтение данных из Excel
+        df = read_excel_file(file_name)  # Чтение данных из Excel
         logger.debug(f"Данные успешно загружены из файла {file_name}")
 
         # Проверка наличия необходимых колонок
@@ -28,8 +30,8 @@ def search_transactions(file_name: str, search_query: str) -> str:
         # Поиск по описанию и категории
         search_query_lower = search_query.lower()
         filtered_df = df[
-            df["Описание"].str.lower().str.contains(search_query_lower, na=False) |
-            df["Категория"].str.lower().str.contains(search_query_lower, na=False)
+            df["Описание"].str.lower().str.contains(search_query_lower, na=False)
+            | df["Категория"].str.lower().str.contains(search_query_lower, na=False)
         ]
 
         # Приведение данных к строковому типу и замена NaN
@@ -48,6 +50,7 @@ def search_transactions(file_name: str, search_query: str) -> str:
     except Exception as e:
         logger.error(f"Ошибка при поиске транзакций: {str(e)}")
         return json.dumps({"error": str(e)}, ensure_ascii=False, indent=4)
+
 
 # if __name__ == "__main__":
 #     file_name = "../data/operations.xlsx"

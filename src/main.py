@@ -1,14 +1,10 @@
 import json
 import logging
 import os
-import pandas as pd
 
 from dotenv import load_dotenv
-
-from datetime import datetime
-from src.views import get_greeting, get_top_transactions, analyze_transactions
-from src.read_excel import read_excel_file
-from src.utils import get_stock_prices, get_exchange_rates
+from src.utils import get_exchange_rates, get_stock_prices
+from src.views import analyze_transactions, get_greeting, get_top_transactions
 
 load_dotenv()
 
@@ -26,7 +22,9 @@ def main(datetime_str: str) -> str:
     try:
         # Получение данных
         greeting = get_greeting(datetime_str)
-        cards_analysis_json = analyze_transactions("../data/operations.xlsx", datetime_str)
+        cards_analysis_json = analyze_transactions(
+            "../data/operations.xlsx", datetime_str
+        )
         top_transactions_json = get_top_transactions(datetime_str)
         exchange_rates = get_exchange_rates()
         stock_prices = get_stock_prices(
