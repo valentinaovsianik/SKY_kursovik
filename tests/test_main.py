@@ -1,48 +1,75 @@
-import json
-
 import pytest
-
+import pandas as pd
+import json
+import os
+from unittest.mock import patch
 from src.main import main
 
 
+# Фикстура для создания тестовых данных
 @pytest.fixture
-def mock_dependencies(mocker):
-    # Настройка моков
-    mock_greeting = "Добрый день"
-    mock_cards_analysis = {"last_digits": "7197", "total_spent": 9965776.83, "cashback": 99657.77}
-    mock_top_transactions = {
-        "top_transactions": [
-            {"date": "23.07.2024", "amount": -150.0, "category": "Супермаркеты", "description": "Покупка"},
-            {"date": "23.07.2024", "amount": -120.0, "category": "Кафе", "description": "Ужин"},
-            {"date": "23.07.2024", "amount": -100.0, "category": "Транспорт", "description": "Такси"},
-        ]
-    }
-    mock_exchange_rates = [{"currency": "USD", "rate": 1.1}, {"currency": "EUR", "rate": 0.9}]
-    mock_stock_prices = [{"symbol": "AAPL", "price": 150.0}, {"symbol": "GOOGL", "price": 2800.0}]
-
-    # Патчи для функций
-    mocker.patch("src.main.get_greeting", return_value=mock_greeting)
-    mocker.patch("src.main.analyze_transactions", return_value=json.dumps(mock_cards_analysis))
-    mocker.patch("src.main.get_top_transactions", return_value=json.dumps(mock_top_transactions))
-    mocker.patch("src.main.get_exchange_rates", return_value=mock_exchange_rates)
-    mocker.patch("src.main.get_stock_prices", return_value=mock_stock_prices)
+def sample_transactions():
+    return pd.DataFrame({
+        "Дата операции": ["01.12.2021 12:00:00", "02.12.2021 13:00:00"],
+        "Сумма операции": [100.0, 200.0],
+        "Категория": ["Супермаркеты", "Рестораны"]
+    })
 
 
-def test_main(mock_dependencies):
-    date_time = "2024-07-23 14:30:00"
-    expected_result = {
-        "greeting": "Добрый день",
-        "cards": {"last_digits": "7197", "total_spent": 9965776.83, "cashback": 99657.77},
-        "top_transactions": [
-            {"date": "23.07.2024", "amount": -150.0, "category": "Супермаркеты", "description": "Покупка"},
-            {"date": "23.07.2024", "amount": -120.0, "category": "Кафе", "description": "Ужин"},
-            {"date": "23.07.2024", "amount": -100.0, "category": "Транспорт", "description": "Такси"},
-        ],
-        "currency_rates": [{"currency": "USD", "rate": 1.1}, {"currency": "EUR", "rate": 0.9}],
-        "stock_prices": [{"symbol": "AAPL", "price": 150.0}, {"symbol": "GOOGL", "price": 2800.0}],
-    }
+@pytest.mark.parametrize(
+    "search_query, category, expected_search_results, expected_spending_by_category, expected_main_first",
+    [
+        (
+                "Рестораны",
+                "Супермаркеты",
+                [{"Дата операции": "02.12.2021 13:00:00", "Сумма операции": 200.0}],
+                [{"Дата операции": "02.12.2021", "Сумма операции": 200.0}],
+                {"key": "value"}
+        ),
+        (
+                None,
+                "Супермаркеты",
+                [],
+                [{"Дата операции": "02.12.2021", "Сумма операции": 200.0}],
+                {"key": "value"}
+        ),
+        (
+                "Рестораны",
+                None,
+                [{"Дата операции": "02.12.2021 13:00:00", "Сумма операции": 200.0}],
+                [],
+                {"key": "value"}
+        ),
+        (
+                None,
+                None,
+                [],
+                [],
+                {"key": "value"}
+        )
+    ]
+)
+def test_main(sample_transactions, search_query, category, expected_search_results, expected_spending_by_category,
+              expected_main_first):
 
-    result = main(date_time)
-    result_dict = json.loads(result)
+    with patch("src.main.search_transactions") as mock_search_transactions, \
+            patch("src.main.spending_by_category") as mock_spending_by_category, \
+            patch("src.main.main_first") as mock_main_first:
 
-    assert result_dict == expected_result
+        mock_search_transactions.return_value = expected_search_results
+        mock_spending_by_category.return_value = "test_report.json"
+        mock_main_first.return_value = json.dumps(expected_main_first)
+
+        # Создание файла отчета
+        report_data = expected_spending_by_category
+        report_file_name = "test_report.json"
+        with open(report_file_name, "w", encoding="utf-8") as f:
+            json.dump(report_data, f)
+
+        result = main(sample_transactions, "2021-12-01 00:00:00", search_query=search_query, category=category)
+
+        assert result["search_transactions"] == expected_search_results
+        assert result["spending_by_category"] == expected_spending_by_category
+        assert result["main_first"] == expected_main_first
+
+        os.remove(report_file_name)
