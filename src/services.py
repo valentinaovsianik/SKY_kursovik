@@ -1,7 +1,6 @@
 import json
 import logging
-
-from src.read_excel import read_excel_file
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,12 +10,12 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
-def search_transactions(file_name: str, search_query: str) -> str:
+def search_transactions(transactions: list[dict], search_query: str) -> str:
     """Ищет транзакции по строке запроса в описании или категории и возвращает результат в формате JSON"""
-    logger.info(f"Начинаем поиск транзакций в файле {file_name} по запросу '{search_query}'")
+    logger.info(f"Начинаем поиск транзакций по запросу '{search_query}'")
     try:
-        df = read_excel_file(file_name)  # Чтение данных из Excel
-        logger.debug(f"Данные успешно загружены из файла {file_name}")
+        df = pd.DataFrame(transactions)
+        logger.debug(f"Данные успешно преобразованы в DataFrame")
 
         # Проверка наличия необходимых колонок
         required_columns = {"Описание", "Категория"}
@@ -50,8 +49,13 @@ def search_transactions(file_name: str, search_query: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False, indent=4)
 
 
-# if __name__ == "__main__":
-#     file_name = "../data/operations.xlsx"
-#     search_query = "Супермаркеты"
-#     result = search_transactions(file_name, search_query)
-#     print(result)
+if __name__ == "__main__":
+    transactions = [
+        {"Описание": "Купил кофе", "Категория": "Кафе", "Кэшбэк": 10, "MCC": 5812},
+        {"Описание": "Оплата в супермаркете", "Категория": "Супермаркеты", "Кэшбэк": 20, "MCC": 5411},
+        {"Описание": "Поездка на такси", "Категория": "Транспорт", "Кэшбэк": 15, "MCC": 4121},
+        {"Описание": "Обед в ресторане", "Категория": "Рестораны", "Кэшбэк": 5, "MCC": 5811}
+    ]
+    search_query = "Супермаркет"
+    result_json = search_transactions(transactions, search_query)
+    print(result_json)
