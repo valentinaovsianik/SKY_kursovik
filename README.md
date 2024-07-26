@@ -18,16 +18,17 @@
 ### `get_top_transactions`
 Возвращает топ-5 транзакций по сумме платежа в формате JSON от начала месяца до указанной даты.
 
-### `main`
-Главная функция, которая возвращает JSON-ответ с необходимыми параметрами (объединяет предыдущие функции).
-
+### `main_first`
+Функция, которая формирует JSON-ответ из get_greeting, get_exchange_rates, get_stock_prices, analyze_transactions и get_top_transactions.
 
 ### `search_transactions`
 Функция простого поиска: ищет транзакции по строке запроса в описании или категории и возвращает результат в формате JSON.
 
 ### `report_to_file`
-Декоратор для записи результата функции spending_by_category в файл.
+Декоратор для записи результата функции spending_by_category (траты по категории) в файл.
 
+### `main`
+Главная функция проекта, которая возвращает JSON-ответ с необходимыми параметрами (объединяет предыдущие функции): main_first, функцию простого поиска и декоратор, создающий отчеты трат по категории.
 
 
 ## Логирование:
@@ -43,25 +44,7 @@ git clone git@github.com:valentinaovsianik/SKY_kursovik.git
 
 
 ## Покрытие тестами:
-
-|Name                       |Stmts  | Miss| Cover|
-|---------------------------|-------|-----|------|
-|src\__init__.py            |    0  |   0 | 100% |
-|src\main.py                |   27  |   3 |  89% |
-|src\read_excel.py          |    7  |   0 | 100% |
-|src\reports.py             |   43  |   7 |  84% |
-|src\services.py            |   31  |   0 | 100% |
-|src\utils.py               |   79  |  19 |  76% |
-|src\views.py               |   72  |   6 |  92% |
-|tests\__init__.py          |    0  |   0 | 100% |
-|tests\test_main.py         |   22  |   0 | 100% |
-|tests\test_read_excel.py   |   24  |   0 | 100% |
-|tests\test_reports.py      |   22  |   0 | 100% |
-|tests\test_services.py     |   34  |   0 | 100% |
-|tests\test_utils.py        |  101  |   0 | 100% |
-|tests\test_views.py        |   42  |   0 | 100% |
-|---------------------------|-------|-----|------|
-|TOTAL                      | 504   |  35 |  93% |
+Информацию о покрытии теста можно сгенерировать, запустив команду pytest --cov=src --cov-report=html
 
 
 ## Лицензия:
