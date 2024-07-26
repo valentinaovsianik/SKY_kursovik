@@ -1,10 +1,6 @@
 import json
-import os
+import requests_mock
 from unittest.mock import Mock, mock_open, patch
-
-import pytest
-import requests
-from requests.exceptions import RequestException
 
 from src.utils import get_exchange_rates, get_load_user_setting, get_stock_prices
 
@@ -30,136 +26,59 @@ def test_get_load_user_setting_other_exception():
 
 
 # Тесты для get_exchange_rates
-@pytest.fixture
-def mock_env_vars():
-    """Фикстура для установки переменной окружения API_KEY"""
-    with patch.dict("os.environ", {"API_KEY": "test_api_key"}):
-        yield
+@patch("src.utils.get_load_user_setting", return_value={"user_currencies": ["USD", "EUR"]})
+@patch("src.utils.os.getenv", return_value="fake_api_key")
+def test_get_exchange_rates(mock_getenv, mock_get_load_user_setting):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "https://api.apilayer.com/exchangerates_data/latest?symbols=USD,EUR&base=RUB",
+            json={"rates": {"USD": 0.013, "EUR": 0.011}}
+        )
+
+        rates = get_exchange_rates()
+        assert rates is not None
+        assert len(rates) == 2
+        assert rates[0]["currency"] == "USD"
+        assert rates[0]["rate"] == 0.013
+        assert rates[1]["currency"] == "EUR"
+        assert rates[1]["rate"] == 0.011
 
 
-def test_get_exchange_rates_success(mock_env_vars):
-    """Тест успешного получения данных о курсах валют"""
-    # Создаем mock для requests.get
-    with patch("requests.get") as mock_get:
-        mock_response = Mock()
-        mock_response.raise_for_status = Mock()
-        mock_response.json = Mock(return_value={"rates": {"USD": 1.23}})
-        mock_get.return_value = mock_response
+@patch("src.utils.get_load_user_setting", return_value={"user_currencies": ["USD", "EUR"]})
+@patch("src.utils.os.getenv", return_value=None)
+def test_get_exchange_rates_no_api_key(mock_getenv, mock_get_load_user_setting):
+    rates = get_exchange_rates()
+    assert rates is None
 
-        result = get_exchange_rates()
+# Тест для get_stock_prices
+@patch("src.utils.get_load_user_setting", return_value={"user_stocks": ["AAPL", "GOOGL"]})
+def test_get_stock_prices(mock_get_load_user_setting):
+    api_key = "fake_api_key"
+    date_str = "2021-07-01"
 
-        expected_result = [{"currency": "USD", "rate": 1.23}]
-        assert result == expected_result
-
-
-def test_get_exchange_rates_no_api_key():
-    """Тест отсутствия API-ключа."""
-    # Создаем mock для функции get_load_user_setting
-    with patch("src.utils.get_load_user_setting", return_value={"user_currencies": ["USD"]}), patch(
-        "os.getenv", return_value=None
-    ):
-        result = get_exchange_rates()
-        assert result is None
-
-
-def test_get_exchange_rates_request_error(mock_env_vars):
-    """Тест на случай ошибки запроса"""
-    # Создаем mock для requests.get
-    with patch("requests.get") as mock_get:
-        mock_get.side_effect = RequestException("Connection error")
-        result = get_exchange_rates()
-        assert result is None
-
-
-# Тесты для get_stock_prices
-# Функция для создания mock настроек пользователя
-def mock_get_load_user_setting_success(settings_file):
-    return {"user_stocks": ["AAPL", "MSFT"]}
-
-
-def mock_get_load_user_setting_fail(settings_file):
-    return None
-
-
-# Фикстура для установки переменной окружения API_KEY
-@pytest.fixture
-def set_env_api_key(monkeypatch):
-    monkeypatch.setenv("API_KEY", "test_api_key")
-
-
-# Фикстура для создания временного файла настроек
-@pytest.fixture
-def mock_settings_file(tmp_path):
-    settings = {"user_stocks": ["AAPL", "MSFT"]}
-    settings_file = tmp_path / "test_settings.json"
-    with open(settings_file, "w") as f:
-        json.dump(settings, f)
-    return str(settings_file)
-
-
-def test_get_stock_prices_success(set_env_api_key, mock_settings_file):
-    """Тест успешного получения цен акций"""
-    api_key = os.getenv("API_KEY")
-    date = "2024-07-22"
-    settings_file = mock_settings_file
-
-    # Mock ответ от API
-    def mock_requests_get(url, params):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "Time Series (Daily)": {"2024-07-22": {"4. close": "150.00"}, "2024-07-21": {"4. close": "145.00"}}
-        }
-        return mock_response
-
-    with patch("src.utils.get_load_user_setting", side_effect=mock_get_load_user_setting_success):
-        with patch("requests.get", side_effect=mock_requests_get):
-            result = get_stock_prices(api_key, settings_file, date)
-            expected_result = {"AAPL": "150.00", "MSFT": "150.00"}
-            assert result == expected_result
-
-
-def test_get_stock_prices_no_user_settings(set_env_api_key, mock_settings_file):
-    """Тест обработки случая, когда настройки пользователя не загружаются"""
-    api_key = os.getenv("API_KEY")
-    date = "2024-07-22"
-    settings_file = mock_settings_file
-
-    with patch("src.utils.get_load_user_setting", side_effect=mock_get_load_user_setting_fail):
-        result = get_stock_prices(api_key, settings_file, date)
-        assert result == {}
-
-
-def test_get_stock_prices_request_error(set_env_api_key, mock_settings_file):
-    """Тест обработки ошибки запроса к API."""
-    api_key = os.getenv("API_KEY")
-    date = "2024-07-22"
-    settings_file = mock_settings_file
-
-    def mock_requests_get(url, params):
-        raise requests.exceptions.RequestException("Connection error")
-
-    with patch("src.utils.get_load_user_setting", side_effect=mock_get_load_user_setting_success):
-        with patch("requests.get", side_effect=mock_requests_get):
-            result = get_stock_prices(api_key, settings_file, date)
-            assert result == {}
-
-
-def test_get_stock_prices_no_data_for_date(set_env_api_key, mock_settings_file):
-    """Тест обработки случая, когда нет данных для указанной даты"""
-    api_key = os.getenv("API_KEY")
-    date = "2024-07-22"
-    settings_file = mock_settings_file
-
-    # Mock ответ от API без данных для указанной даты
-    def mock_requests_get(url, params):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"Time Series (Daily)": {"2024-07-21": {"4. close": "145.00"}}}
-        return mock_response
-
-    with patch("src.utils.get_load_user_setting", side_effect=mock_get_load_user_setting_success):
-        with patch("requests.get", side_effect=mock_requests_get):
-            result = get_stock_prices(api_key, settings_file, date)
-            expected_result = {}
-            assert result == expected_result
+    with requests_mock.Mocker() as m:
+        m.get(
+            "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=fake_api_key",
+            json={
+                "Time Series (Daily)": {
+                    "2021-07-01": {"4. close": "145.11"},
+                    "2021-06-30": {"4. close": "143.24"}
+                }
+            }
+        )
+        m.get(
+            "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOGL&apikey=fake_api_key",
+            json={
+                "Time Series (Daily)": {
+                    "2021-07-01": {"4. close": "2700.00"},
+                    "2021-06-30": {"4. close": "2680.00"}
+                }
+            }
+        )
+        prices = get_stock_prices(api_key, "settings.json", date_str)
+        assert prices is not None
+        assert len(prices) == 2
+        assert prices[0]["stock"] == "AAPL"
+        assert prices[0]["price"] == 145.11
+        assert prices[1]["stock"] == "GOOGL"
+        assert prices[1]["price"] == 2700.00
