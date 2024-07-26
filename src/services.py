@@ -1,5 +1,6 @@
 import json
 import logging
+
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ def search_transactions(transactions: list[dict], search_query: str) -> str:
     logger.info(f"Начинаем поиск транзакций по запросу '{search_query}'")
     try:
         df = pd.DataFrame(transactions)
-        logger.debug(f"Данные успешно преобразованы в DataFrame")
+        logger.debug("Данные успешно преобразованы в DataFrame")
 
         # Проверка наличия необходимых колонок
         required_columns = {"Описание", "Категория"}
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         {"Описание": "Купил кофе", "Категория": "Кафе", "Кэшбэк": 10, "MCC": 5812},
         {"Описание": "Оплата в супермаркете", "Категория": "Супермаркеты", "Кэшбэк": 20, "MCC": 5411},
         {"Описание": "Поездка на такси", "Категория": "Транспорт", "Кэшбэк": 15, "MCC": 4121},
-        {"Описание": "Обед в ресторане", "Категория": "Рестораны", "Кэшбэк": 5, "MCC": 5811}
+        {"Описание": "Обед в ресторане", "Категория": "Рестораны", "Кэшбэк": 5, "MCC": 5811},
     ]
     search_query = "Супермаркет"
     result_json = search_transactions(transactions, search_query)

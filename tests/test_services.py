@@ -36,8 +36,9 @@ def sample_transactions():
             "Категория": "Супермаркеты",
             "MCC": "5411",
             "Описание": "Колхоз",
-        }
+        },
     ]
+
 
 def test_search_transactions(sample_transactions):
     """Тестирование функции поиска транзакций"""
@@ -70,13 +71,14 @@ def test_search_transactions(sample_transactions):
             "Категория": "Супермаркеты",
             "MCC": "5411",
             "Описание": "Колхоз",
-        }
+        },
     ]
     expected_json = json.dumps(expected_result, ensure_ascii=False, indent=4)
 
     result = search_transactions(sample_transactions, search_query)
 
     assert result == expected_json
+
 
 def test_search_transactions_no_results(sample_transactions):
     """Тестирование поиска транзакций без результатов"""
@@ -87,6 +89,7 @@ def test_search_transactions_no_results(sample_transactions):
     result = search_transactions(sample_transactions, search_query)
 
     assert result == expected_json
+
 
 def test_search_transactions_missing_columns():
     """Тестирование поиска транзакций при отсутствии необходимых колонок"""
@@ -100,7 +103,7 @@ def test_search_transactions_missing_columns():
             "Валюта операции": "RUB",
             "Сумма платежа": "-160,89",
             "Валюта платежа": "RUB",
-            "Кэшбэк": ""
+            "Кэшбэк": "",
         }
     ]
 

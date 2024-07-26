@@ -1,14 +1,14 @@
 import json
 import logging
-import pandas as pd
-
-from dotenv import load_dotenv
 from typing import Optional
 
-from src.views import main_first
+import pandas as pd
+from dotenv import load_dotenv
+
 from src.read_excel import read_excel_file
 from src.reports import spending_by_category
 from src.services import search_transactions
+from src.views import main_first
 
 load_dotenv()
 
@@ -21,13 +21,15 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
-def main(transactions: pd.DataFrame, date_time_str: str, search_query: Optional[str] = None,
-         category: Optional[str] = None) -> dict:
+def main(
+    transactions: pd.DataFrame, date_time_str: str, search_query: Optional[str] = None, category: Optional[str] = None
+) -> dict:
     logging.info("Начинаем анализ транзакций.")
 
     # Преобразование формата даты в DataFrame
-    transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S",
-                                                   errors="coerce")
+    transactions["Дата операции"] = pd.to_datetime(
+        transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S", errors="coerce"
+    )
 
     # Убедитесь, что данные не содержат NaT после преобразования
     if transactions["Дата операции"].isnull().any():
@@ -75,10 +77,11 @@ def main(transactions: pd.DataFrame, date_time_str: str, search_query: Optional[
     result = {
         "search_transactions": search_results,
         "spending_by_category": report_df.to_dict(orient="records"),
-        "main_first": main_first_data
+        "main_first": main_first_data,
     }
 
     return result
+
 
 if __name__ == "__main__":
     file_name = "..//data//operations.xlsx"

@@ -10,11 +10,9 @@ from src.read_excel import read_excel_file
 @pytest.fixture
 def temp_excel_file():
     """Создает временный Excel-файл для тестов и удаляет его после выполнения"""
-    # Создаем временный файл
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
         file_name = tmp_file.name
 
-    # Создаем DataFrame с тестовыми данными
     df = pd.DataFrame(
         {
             "Номер карты": ["1234567812345678", "8765432187654321"],
@@ -22,13 +20,9 @@ def temp_excel_file():
             "Дата операции": ["01.01.2024 10:00:00", "02.01.2024 11:00:00"],
         }
     )
-
-    # Записываем DataFrame в Excel-файл
     df.to_excel(file_name, index=False)
-
     yield file_name
 
-    # Удаляем временный файл после выполнения теста
     if os.path.exists(file_name):
         os.remove(file_name)
 
@@ -39,9 +33,10 @@ def test_read_excel_file_success(temp_excel_file):
 
     # Ожидаемый результат
     df = pd.read_excel(temp_excel_file)
-    expected_result = df.to_dict(orient="records")
+    expected_result = df
 
-    assert result == expected_result
+    # Проверяем, что результат и ожидаемый результат совпадают
+    pd.testing.assert_frame_equal(result, expected_result)
 
 
 def test_read_excel_file_failure():

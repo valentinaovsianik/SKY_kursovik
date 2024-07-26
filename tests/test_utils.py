@@ -1,6 +1,7 @@
 import json
+from unittest.mock import mock_open, patch
+
 import requests_mock
-from unittest.mock import Mock, mock_open, patch
 
 from src.utils import get_exchange_rates, get_load_user_setting, get_stock_prices
 
@@ -32,7 +33,7 @@ def test_get_exchange_rates(mock_getenv, mock_get_load_user_setting):
     with requests_mock.Mocker() as m:
         m.get(
             "https://api.apilayer.com/exchangerates_data/latest?symbols=USD,EUR&base=RUB",
-            json={"rates": {"USD": 0.013, "EUR": 0.011}}
+            json={"rates": {"USD": 0.013, "EUR": 0.011}},
         )
 
         rates = get_exchange_rates()
@@ -50,6 +51,7 @@ def test_get_exchange_rates_no_api_key(mock_getenv, mock_get_load_user_setting):
     rates = get_exchange_rates()
     assert rates is None
 
+
 # Тест для get_stock_prices
 @patch("src.utils.get_load_user_setting", return_value={"user_stocks": ["AAPL", "GOOGL"]})
 def test_get_stock_prices(mock_get_load_user_setting):
@@ -59,21 +61,13 @@ def test_get_stock_prices(mock_get_load_user_setting):
     with requests_mock.Mocker() as m:
         m.get(
             "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=fake_api_key",
-            json={
-                "Time Series (Daily)": {
-                    "2021-07-01": {"4. close": "145.11"},
-                    "2021-06-30": {"4. close": "143.24"}
-                }
-            }
+            json={"Time Series (Daily)": {"2021-07-01": {"4. close": "145.11"}, "2021-06-30": {"4. close": "143.24"}}},
         )
         m.get(
             "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOGL&apikey=fake_api_key",
             json={
-                "Time Series (Daily)": {
-                    "2021-07-01": {"4. close": "2700.00"},
-                    "2021-06-30": {"4. close": "2680.00"}
-                }
-            }
+                "Time Series (Daily)": {"2021-07-01": {"4. close": "2700.00"}, "2021-06-30": {"4. close": "2680.00"}}
+            },
         )
         prices = get_stock_prices(api_key, "settings.json", date_str)
         assert prices is not None
