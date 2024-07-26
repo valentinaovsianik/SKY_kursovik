@@ -85,8 +85,11 @@ def get_exchange_rates():
         data = response.json()  # Парсим JSON-ответ
 
         for currency in user_currencies:
-            if currency in data.get("rates", {}):
-                exchange_rates.append({"currency": currency, "rate": data["rates"][currency]})
+            if currency in data["rates"]:
+                exchange_rates.append({
+                    "currency": currency,
+                    "rate": data["rates"][currency]
+                })
         logging.info(f"Курсы валют успешно получены: {exchange_rates}")
         return exchange_rates
 
@@ -103,7 +106,7 @@ def get_exchange_rates():
 #     if rates:
 #         print("Полученные курсы валют:")
 #         for rate in rates:
-#             print(f"{rate['currency']}: {rate['rate']}")
+#             print(f"{{\n  \"currency\": \"{rate['currency']}\",\n  \"rate\": {rate['rate']}\n}}")
 #     else:
 #         print("Не удалось получить курсы валют.")
 
@@ -113,11 +116,11 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
     # Загрузка настроек пользователя
     user_settings = get_load_user_setting(settings_file)
     if not user_settings:
-        return {}
+        return []
 
     # Получение списка символов акций из настроек
     user_stocks = user_settings.get("user_stocks", [])
-    prices = {}
+    prices = []
 
     # URL для запроса
     url = "https://www.alphavantage.co/query"
@@ -134,27 +137,27 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
             if "Time Series (Daily)" in data:
                 time_series = data["Time Series (Daily)"]
                 if date in time_series:
-                    prices[symbol] = time_series[date]["4. close"]  # Цена закрытия
+                    price = float(time_series[date]["4. close"])  # Цена закрытия
+                    prices.append({"stock": symbol, "price": price})
                 else:
-                    logging.warning(f"Нет данных для {symbol} на дату {date}")
+                    logger.warning(f"Нет данных для {symbol} на дату {date}")
             else:
-                logging.error(f"Ошибка в данных для {symbol}: {data.get("Error Message", "Неизвестная ошибка")}")
+                error_message = data.get("Error Message", "Неизвестная ошибка")
+                logger.error(f"Ошибка в данных для {symbol}: {error_message}")
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка запроса для {symbol}: {e}")
+            logger.error(f"Ошибка запроса для {symbol}: {e}")
 
     return prices
-
 
 # if __name__ == "__main__":
 #     api_key = "ER9IH8G9L0EQKMFI"
 #     settings_file = "../user_settings.json"
-#     date = "2024-07-22"
-#
+#     date = "2024-07-25"
 #     stock_prices = get_stock_prices(api_key, settings_file, date)
 #     if stock_prices:
 #         print("Цены на акции на дату", date)
-#         for symbol, price in stock_prices.items():
-#             print(f"{symbol}: {price}")
+#         for item in stock_prices:
+#             print(f"{{\n  \"stock\": \"{item['stock']}\",\n  \"price\": {item['price']}\n}}")
 #     else:
 #         print("Не удалось получить данные о ценах на акции.")

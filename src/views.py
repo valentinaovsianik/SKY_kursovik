@@ -7,6 +7,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from src.read_excel import read_excel_file
+from src.utils import get_exchange_rates, get_stock_prices
 
 load_dotenv()
 
@@ -26,53 +27,47 @@ logger.addHandler(file_handler)
 
 def get_greeting(date_time_str: str) -> str:
     """Функция приветствия в зависимости от времени суток"""
-    date_time_obj = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")  # Преобразование строки в объект datetime
+    now = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")
 
-    hour = date_time_obj.hour  # Получение часа из объекта datetime
-
-    if 6 <= hour < 12:
+    if 6 <= now.hour < 12:
         return "Доброе утро"
-    elif 12 <= hour < 18:
+    elif 12 <= now.hour < 18:
         return "Добрый день"
-    elif 18 <= hour < 22:
+    elif 18 <= now.hour < 22:
         return "Добрый вечер"
     else:
         return "Доброй ночи"
 
+# if __name__ == "__main__":
+#     test_date_time = "2024-07-26 15:00:00"
+#     greeting = get_greeting(test_date_time)
+#     print(greeting)
 
-def analyze_transactions(file_name: str, date_time: str) -> str:
-    """Анализирует транзакции из excel-файла и возвращает JSON-ответ"""
+
+def analyze_transactions(df: pd.DataFrame, date_time_str: str) -> str:
+    """Анализирует транзакции из DataFrame и возвращает JSON-ответ"""
     try:
-        transactions_data = read_excel_file(file_name)
-
-        # Преобразование данных в DataFrame, если это необходимо
-        if not isinstance(transactions_data, pd.DataFrame):
-            df = pd.DataFrame(transactions_data)
-        else:
-            df = transactions_data
-
         # Проверка, что DataFrame не пустой
         if df.empty:
-            logger.error(f"Нет данных для анализа в файле {file_name}.")
-            return json.dumps(
-                {"error": f"Нет данных для анализа в файле {file_name}"},
-                ensure_ascii=False,
-            )
+            logger.error("Нет данных для анализа.")
+            return json.dumps({"error": "Нет данных для анализа"}, ensure_ascii=False)
 
-        logger.info(f"Начинаем анализ транзакций из файла {file_name}.")
+        logger.info("Начинаем анализ транзакций.")
 
         # Проверяем наличие необходимых колонок
-        if "Номер карты" not in df.columns or "Сумма операции" not in df.columns:
-            logger.error(f"Необходимые колонки отсутствуют в файле {file_name}.")
-            return json.dumps(
-                {"error": "Необходимые колонки отсутствуют в данных"},
-                ensure_ascii=False,
-            )
+        required_columns = ["Номер карты", "Сумма операции"]
+        if not all(col in df.columns for col in required_columns):
+            logger.error("Необходимые колонки отсутствуют в данных.")
+            return json.dumps({"error": "Необходимые колонки отсутствуют в данных"}, ensure_ascii=False)
 
         # Последние 4 цифры номера карты
-        last_digits = df["Номер карты"].iloc[0][-4:] if not df.empty and "Номер карты" in df.columns else ""
+        if "Номер карты" in df.columns and not df.empty:
+            last_digits = df["Номер карты"].astype(str).str[-4:].mode().iloc[0]  # Наиболее частые последние 4 цифры
+        else:
+            last_digits = ""
 
         # Общая сумма расходов
+        df["Сумма операции"] = pd.to_numeric(df["Сумма операции"], errors="coerce")
         total_spent = abs(df[df["Сумма операции"] < 0]["Сумма операции"].sum())
 
         # Вычисление кэшбэка
@@ -92,37 +87,34 @@ def analyze_transactions(file_name: str, date_time: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
-# if __name__ == "__main__":
-#     file_name = "../data/operations.xlsx"
-#     date_time = "2024-07-23 14:30:00"
-#
-#     result = analyze_transactions(file_name, date_time)
-#     print(result)
 
-
-def get_top_transactions(date_time: str) -> str:
+def get_top_transactions(df: pd.DataFrame, date_time_str: str) -> str:
     """Возвращает топ-5 транзакций по сумме платежа в формате JSON от начала месяца до указанной даты"""
     try:
         # Определение начала месяца
-        now = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
+        now = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         end_date = now
 
-        # Загрузка данных из файла
-        file_name = "../data/operations.xlsx"
-        transactions_data = read_excel_file(file_name)
-        df = pd.DataFrame(transactions_data)
+        logger.debug(f"Начало месяца: {start_of_month}")
+        logger.debug(f"Конец диапазона: {end_date}")
 
         # Преобразование столбца даты в datetime
-        date_format = "%d.%m.%Y %H:%M:%S"
+        date_format = "%Y-%m-%d %H:%M:%S"  # Убедитесь, что формат совпадает с вашим DataFrame
         df["Дата операции"] = pd.to_datetime(df["Дата операции"], format=date_format, errors="coerce")
+
+        logger.debug(f"Данные после преобразования даты:\n{df.head()}")
 
         # Фильтрация транзакций по дате
         filtered_df = df[(df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= end_date)]
 
+        logger.debug(f"Отфильтрованные данные:\n{filtered_df.head()}")
+
         # Сортировка транзакций по сумме в убывающем порядке и выбор топ-5
         sorted_df = filtered_df.sort_values(by="Сумма операции", ascending=False)
         top_transactions = sorted_df.head(5)
+
+        logger.debug(f"Топ-5 транзакций:\n{top_transactions}")
 
         # Форматирование даты и суммы
         top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
@@ -141,7 +133,6 @@ def get_top_transactions(date_time: str) -> str:
             )
 
         logger.info("Топ-5 транзакций успешно получены.")
-
         return json.dumps({"top_transactions": result}, ensure_ascii=False, indent=4)
 
     except Exception as e:
@@ -149,7 +140,49 @@ def get_top_transactions(date_time: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
-# if __name__ == "__main__":
-#     date_time = "2021-12-08 14:30:00"
-#     result = get_top_transactions(date_time)
-#     print(result)
+def main_first(df: pd.DataFrame, date_time_str: str) -> str:
+    """Главная функция, которая возвращает JSON-ответ с необходимыми параметрами"""
+    try:
+        # Получение данных
+        greeting = get_greeting(date_time_str)
+        cards_analysis_json = analyze_transactions(df, date_time_str)
+        top_transactions_json = get_top_transactions(df, date_time_str)
+        exchange_rates = get_exchange_rates()
+        stock_prices = get_stock_prices(
+            api_key=os.getenv("alphavantage_co_API_KEY"),
+            settings_file="../user_settings.json",
+            date=date_time_str
+        )
+
+        # Декодирование JSON-ответов в словари
+        cards_analysis = json.loads(cards_analysis_json)
+        top_transactions = json.loads(top_transactions_json)
+
+        # Формирование результата в формате JSON
+        result = {
+            "greeting": greeting,
+            "cards": cards_analysis,
+            "top_transactions": top_transactions.get("top_transactions", []),
+            "currency_rates": exchange_rates if exchange_rates else [],
+            "stock_prices": stock_prices if stock_prices else [],
+        }
+
+        return json.dumps(result, ensure_ascii=False, indent=4)
+
+    except Exception as e:
+        logger.error(f"Ошибка в главной функции: {str(e)}")
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=4)
+
+
+if __name__ == "__main__":
+    data = {
+        "Дата операции": ["2021-07-01 12:00:00", "2021-07-02 14:30:00", "2021-07-03 09:15:00"],
+        "Категория": ["Супермаркеты", "Кафе", "Рестораны"],
+        "Описание": ["Покупка в супермаркете", "Обед в кафе", "Ужин в ресторане"],
+        "Сумма операции": [-1500, -800, -1200],
+        "Номер карты": ["*7197", "*7197", "*7196"]
+    }
+    df = pd.DataFrame(data)
+    date_time_str = "2021-07-03 14:30:00"
+    result = main_first(df, date_time_str)
+    print(result)
