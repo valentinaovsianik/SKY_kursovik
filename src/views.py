@@ -6,7 +6,6 @@ from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.read_excel import read_excel_file
 from src.utils import get_exchange_rates, get_stock_prices
 
 load_dotenv()
@@ -37,6 +36,7 @@ def get_greeting(date_time_str: str) -> str:
         return "Добрый вечер"
     else:
         return "Доброй ночи"
+
 
 # if __name__ == "__main__":
 #     test_date_time = "2024-07-26 15:00:00"
@@ -87,7 +87,6 @@ def analyze_transactions(df: pd.DataFrame, date_time_str: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
-
 def get_top_transactions(df: pd.DataFrame, date_time_str: str) -> str:
     """Возвращает топ-5 транзакций по сумме платежа в формате JSON от начала месяца до указанной даты"""
     try:
@@ -117,8 +116,8 @@ def get_top_transactions(df: pd.DataFrame, date_time_str: str) -> str:
         logger.debug(f"Топ-5 транзакций:\n{top_transactions}")
 
         # Форматирование даты и суммы
-        top_transactions["Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
-        top_transactions["Сумма операции"] = top_transactions["Сумма операции"].astype(float)
+        top_transactions.loc[:, "Дата операции"] = top_transactions["Дата операции"].dt.strftime("%d.%m.%Y")
+        top_transactions.loc[:, "Сумма операции"] = top_transactions["Сумма операции"].astype(float)
 
         # Формирование результата в требуемом формате
         result = []
@@ -149,9 +148,7 @@ def main_first(df: pd.DataFrame, date_time_str: str) -> str:
         top_transactions_json = get_top_transactions(df, date_time_str)
         exchange_rates = get_exchange_rates()
         stock_prices = get_stock_prices(
-            api_key=os.getenv("alphavantage_co_API_KEY"),
-            settings_file="../user_settings.json",
-            date=date_time_str
+            api_key=os.getenv("alphavantage_co_API_KEY"), settings_file="../user_settings.json", date=date_time_str
         )
 
         # Декодирование JSON-ответов в словари
@@ -180,7 +177,7 @@ if __name__ == "__main__":
         "Категория": ["Супермаркеты", "Кафе", "Рестораны"],
         "Описание": ["Покупка в супермаркете", "Обед в кафе", "Ужин в ресторане"],
         "Сумма операции": [-1500, -800, -1200],
-        "Номер карты": ["*7197", "*7197", "*7196"]
+        "Номер карты": ["*7197", "*7197", "*7196"],
     }
     df = pd.DataFrame(data)
     date_time_str = "2021-07-03 14:30:00"

@@ -83,15 +83,15 @@ def main(
     return result
 
 
-if __name__ == "__main__":
-    file_name = "..//data//operations.xlsx"
-    date_time_str = "2021-12-26 00:00:00"
-
-    # Считывание данных из Excel файла
-    df = read_excel_file(file_name)
-
-    # Вызов функции main с DataFrame
-    result = main(df, date_time_str, search_query="колхоз", category="Супермаркеты")
-
-    # Печать результата
-    print(json.dumps(result, indent=4, ensure_ascii=False))
+# if __name__ == "__main__":
+#     file_name = "..//data//operations.xlsx"
+#     date_time_str = "2021-12-26 00:00:00"
+#
+#     # Считывание данных из Excel файла
+#     df = read_excel_file(file_name)
+#
+#     # Вызов функции main с DataFrame
+#     result = main(df, date_time_str, search_query="колхоз", category="Супермаркеты")
+#
+#     # Печать результата
+#     print(json.dumps(result, indent=4, ensure_ascii=False))

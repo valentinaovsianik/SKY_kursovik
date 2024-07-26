@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -86,10 +87,7 @@ def get_exchange_rates():
 
         for currency in user_currencies:
             if currency in data["rates"]:
-                exchange_rates.append({
-                    "currency": currency,
-                    "rate": data["rates"][currency]
-                })
+                exchange_rates.append({"currency": currency, "rate": data["rates"][currency]})
         logging.info(f"Курсы валют успешно получены: {exchange_rates}")
         return exchange_rates
 
@@ -133,7 +131,10 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
             response.raise_for_status()
             data = response.json()
 
-            # Проверка наличия данных
+            # Логирование полного ответа для отладки
+            logger.debug(f"Ответ от API для {symbol}: {data}")
+
+            # Проверка наличия данных и обработки ошибок
             if "Time Series (Daily)" in data:
                 time_series = data["Time Series (Daily)"]
                 if date in time_series:
@@ -141,23 +142,28 @@ def get_stock_prices(api_key: str, settings_file: str, date: str) -> dict:
                     prices.append({"stock": symbol, "price": price})
                 else:
                     logger.warning(f"Нет данных для {symbol} на дату {date}")
+            elif "Information" in data:
+                error_message = data["Information"]
+                logger.error(f"Ошибка в данных для {symbol}: {error_message}")
             else:
                 error_message = data.get("Error Message", "Неизвестная ошибка")
                 logger.error(f"Ошибка в данных для {symbol}: {error_message}")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Ошибка запроса для {symbol}: {e}")
+            # В случае сетевой ошибки, подождите перед следующим запросом
+            time.sleep(1)
 
     return prices
 
+
 # if __name__ == "__main__":
-#     api_key = "ER9IH8G9L0EQKMFI"
+#     api_key = "WBKGN6R9SFIZ499P"
 #     settings_file = "../user_settings.json"
 #     date = "2024-07-25"
 #     stock_prices = get_stock_prices(api_key, settings_file, date)
 #     if stock_prices:
 #         print("Цены на акции на дату", date)
-#         for item in stock_prices:
-#             print(f"{{\n  \"stock\": \"{item['stock']}\",\n  \"price\": {item['price']}\n}}")
+#         print(json.dumps(stock_prices, indent=4, ensure_ascii=False))
 #     else:
 #         print("Не удалось получить данные о ценах на акции.")
