@@ -5,7 +5,6 @@ from typing import Optional
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.read_excel import read_excel_file
 from src.reports import spending_by_category
 from src.services import search_transactions
 from src.views import main_first

@@ -38,6 +38,7 @@ class TestSpendingByCategory(unittest.TestCase):
 
     def test_decorator_creates_file(self):
         """Проверка, что декоратор создает файл"""
+
         @report_to_file(file_name="test_report.json")
         def dummy_function():
             return self.df
@@ -51,6 +52,7 @@ class TestSpendingByCategory(unittest.TestCase):
 
     def test_decorator_with_default_filename(self):
         """Проверка, что декоратор создает файл с именем по умолчанию"""
+
         @report_to_file()
         def dummy_function():
             return self.df
@@ -59,7 +61,7 @@ class TestSpendingByCategory(unittest.TestCase):
         dummy_function()
 
         # Проверка, что файл с именем по умолчанию создан
-        files = [f for f in os.listdir() if f.startswith('report_') and f.endswith('.json')]
+        files = [f for f in os.listdir() if f.startswith("report_") and f.endswith(".json")]
         self.assertGreater(len(files), 0)
 
         # Очистка после теста
