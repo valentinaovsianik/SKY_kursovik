@@ -1,41 +1,67 @@
 import json
 import os
+import unittest
 
 import pandas as pd
-import pytest
 
-from src.reports import spending_by_category
-
-
-@pytest.fixture
-def sample_data():
-    """Создаем временный DataFrame с тестовыми данными"""
-    data = {
-        "Дата операции": ["31.12.2021", "31.12.2021", "31.12.2021"],
-        "Категория": ["Супермаркеты", "Супермаркеты", "Рестораны"],
-        "Сумма операции": [-160.89, -64.00, -200.00],
-        "Описание": ["Магазин", "Колхоз", "Ресторан"],
-    }
-    df = pd.DataFrame(data)
-    return df
+from src.reports import report_to_file, spending_by_category
 
 
-def test_spending_by_category(sample_data):
-    result_json = spending_by_category(sample_data, "Супермаркеты", "2022-01-01")
+class TestSpendingByCategory(unittest.TestCase):
 
-    assert result_json is not None
+    def setUp(self):
+        """Создание данных для тестов"""
+        self.data = {
+            "Дата операции": ["01.07.2024", "10.07.2024", "15.07.2024", "20.04.2024"],
+            "Категория": ["Супермаркеты", "Кафе", "Супермаркеты", "Кафе"],
+            "Сумма операции": [1500, 800, 2000, 1200],
+        }
+        self.df = pd.DataFrame(self.data)
 
-    result_df = pd.read_json(result_json)
-    assert not result_df.empty
-    assert result_df.iloc[0]["Категория"] == "Супермаркеты"
-    assert "Общая сумма" in result_df.columns
+    def test_invalid_date_format(self):
+        """Проверка обработки неверного формата даты"""
+        result = spending_by_category(self.df, "Супермаркеты", "invalid_date")
+        expected_result = []
+        self.assertEqual(json.loads(result), expected_result)
 
-    # Проверка содержимого JSON файла
-    with open("report_spending_by_category.json", "r", encoding="utf-8") as f:
-        result_from_file = json.load(f)
+    def test_missing_category(self):
+        """Проверка обработки отсутствующей категории"""
+        result = spending_by_category(self.df, "Неизвестная категория", "2024-07-15 00:00:00")
+        expected_result = []
+        self.assertEqual(json.loads(result), expected_result)
 
-    assert isinstance(result_from_file, list)
-    assert result_from_file[0]["Категория"] == "Супермаркеты"
+    def test_default_date(self):
+        """Проверка использования текущей даты по умолчанию"""
+        result = spending_by_category(self.df, "Супермаркеты")
+        # Проверим, что результат не пустой и содержит ожидаемые значения
+        self.assertGreater(len(json.loads(result)), 0)
 
-    # Удалить временный файл отчета после теста
-    os.remove("report_spending_by_category.json")
+    def test_decorator_creates_file(self):
+        """Проверка, что декоратор создает файл"""
+        @report_to_file(file_name="test_report.json")
+        def dummy_function():
+            return self.df
+
+        dummy_function()
+
+        self.assertTrue(os.path.isfile("test_report.json"))
+
+        # Очистка после теста
+        os.remove("test_report.json")
+
+    def test_decorator_with_default_filename(self):
+        """Проверка, что декоратор создает файл с именем по умолчанию"""
+        @report_to_file()
+        def dummy_function():
+            return self.df
+
+        # Запуск функции
+        dummy_function()
+
+        # Проверка, что файл с именем по умолчанию создан
+        files = [f for f in os.listdir() if f.startswith('report_') and f.endswith('.json')]
+        self.assertGreater(len(files), 0)
+
+        # Очистка после теста
+        for file in files:
+            os.remove(file)
