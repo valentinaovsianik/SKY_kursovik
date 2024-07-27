@@ -21,6 +21,7 @@ flake8 = "^7.1.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.1"
 pytest-cov = "^5.0.0"
+requests = "^2.32.3"
 
 [tool.mypy]
 disallow_untyped_defs = true
